@@ -14,27 +14,6 @@ pub struct LanguageCompiler<'a> {
     output_file: &'a str,
 }
 
-#[derive(Debug, Eq, PartialEq, Copy, Clone)]
-pub struct SandboxRequest<'a> {
-    /// The max amount of timeout for the given executed code, if the code docker container is running
-    /// for longer than the given timeout then the code is rejected. This is used to ensure that the
-    /// source code is not running for longer than required.
-    pub timeout: u8,
-    /// The given path that would be mounted and shared with the given docker container. This is where
-    /// the container will be reading the source code from and writing the response too. Once this has
-    /// been completed, this is the path to files that will be cleaned up.
-    pub path: &'a str,
-    /// The source code that will be executed, this is the code that will be written to the path and
-    /// mounted to the docker container.
-    pub source_code: &'a str,
-    /// The standard input data that will be used with the given code file. This can be used for when
-    /// projects require that a given code input should  be executing after reading input. e.g taking
-    /// in a input and performing actions on it.
-    pub stdin_data: Option<&'a str>,
-    /// The reference details of the compiler that will be running the code. Including details of the
-    /// language, compiler name (or interrupter) and the name of the given output file.
-    pub compiler: &'a Compiler<'a>,
-}
 
 // a list of compilers and the details for the given compilers. Including the details of the compiler
 // language, the name of the compiler entry point and the file that the output will be written too.
@@ -54,6 +33,60 @@ pub const COMPILERS: [&'static Compiler; 2] = [&Compiler::Python(LanguageCompile
 pub enum Compiler<'a> {
     Python(LanguageCompiler<'a>),
     Node(LanguageCompiler<'a>),
+}
+
+#[derive(Debug, Eq, PartialEq, Copy, Clone)]
+pub enum SandboxTestResult {
+    /// The test case has not yet executed. This is the default case for the test. And should only
+    /// be updated if and when the test has ran and exceeded or ran and failed.
+    NotRan,
+    /// The test case has ran and failed to meet the expected output.
+    Failed,
+    /// The test cas has ran and the expected output has been met by the actual output result.
+    Passed,
+}
+
+#[derive(Debug, Eq, PartialEq, Copy, Clone)]
+pub struct SandboxTest<'a> {
+    /// The internal id of the test, this will be used to ensure that when the response comes
+    /// through that there is a related id to match it up with th request.
+    pub id: &'a str,
+    /// The standard input data that will be used with the given code file. This can be used for when
+    /// projects require that a given code input should  be executing after reading input. e.g taking
+    /// in a input and performing actions on it.
+    pub stdin_data: Option<&'a Vec<&'a str>>,
+    /// The expected standard output for the test case. After execution of the standard input, and
+    /// the data has been returned. This is what we are going to ensure the given test case matches
+    /// before providing a result.
+    pub expected_stdout_data: Option<&'a Vec<&'a str>>,
+    /// The output result of the test case for the given test. With support for marking the test
+    /// as not yet ran.
+    pub result: SandboxTestResult,
+}
+
+#[derive(Debug, Eq, PartialEq, Copy, Clone)]
+pub struct SandboxRequest<'a> {
+    /// The internal id of the request, this will be used to ensure that when the response comes
+    /// through that there is a related id to match it up with th request.
+    pub id: &'a str,
+    /// The max amount of timeout for the given executed code, if the code docker container is running
+    /// for longer than the given timeout then the code is rejected. This is used to ensure that the
+    /// source code is not running for longer than required.
+    pub timeout: u8,
+    /// The given path that would be mounted and shared with the given docker container. This is where
+    /// the container will be reading the source code from and writing the response too. Once this has
+    /// been completed, this is the path to files that will be cleaned up.
+    pub path: &'a str,
+    /// The source code that will be executed, this is the code that will be written to the path and
+    /// mounted to the docker container.
+    pub source_code: &'a Vec<&'a str>,
+    /// The reference details of the compiler that will be running the code. Including details of the
+    /// language, compiler name (or interrupter) and the name of the given output file.
+    pub compiler: &'a Compiler<'a>,
+    /// The related test that will be executed with the sandbox, comparing a given input with
+    /// a given output. This is a optional part since the process could just be compling the
+    /// code and not actually testing anything.
+    pub test: Option<&'a SandboxTest<'a>>,
 }
 
 pub struct Sandbox<'a> {
