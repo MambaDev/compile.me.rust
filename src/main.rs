@@ -1,4 +1,5 @@
 use crate::sandbox::SandboxRequest;
+use std::path::Path;
 
 pub mod sandbox;
 
@@ -8,9 +9,9 @@ fn main() {
     let sandbox = sandbox::Sandbox::new(&SandboxRequest {
         id: "1234",
         timeout: 20,
-        path: "./temp/random/python_test/",
+        path: Path::new("./temp/random/python_test/"),
         source_code: &"print('hello')".split_whitespace().collect::<Vec<&str>>(),
         compiler: &sandbox::COMPILERS[0],
-        test: None
+        test: None,
     });
 }
